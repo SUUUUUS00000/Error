@@ -1,1 +1,178 @@
-1394559730520821872
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+local ID = 7072772332
+if game.PlaceId == ID then return end
+
+if _G.UnsupportedGameGUILaunched then return end
+_G.UnsupportedGameGUILaunched = true
+
+local player = Players.LocalPlayer
+while not player do
+    Players.PlayerAdded:Wait()
+    player = Players.LocalPlayer
+end
+
+local playerGui = player:WaitForChild("PlayerGui")
+
+local blurEffect = Instance.new("BlurEffect")
+blurEffect.Size = 0
+blurEffect.Parent = game:GetService("Lighting")
+
+local function createStyledFrame(name, size, position)
+    local frame = Instance.new("Frame")
+    frame.Name = name
+    frame.Size = size
+    frame.Position = position
+    frame.AnchorPoint = Vector2.new(0.5, 0.5)
+    frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    frame.BackgroundTransparency = 0.15
+    frame.BorderSizePixel = 0
+    frame.Visible = false
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 12)
+    corner.Parent = frame
+    
+    local stroke = Instance.new("UIStroke")
+    stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    stroke.Color = Color3.fromRGB(255, 255, 255)
+    stroke.Transparency = 0.9
+    stroke.Thickness = 1
+    stroke.Parent = frame
+    
+    return frame
+end
+
+local function createHeader(parent)
+    local header = Instance.new("Frame")
+    header.Name = "Header"
+    header.Size = UDim2.new(1, 0, 0, 50)
+    header.Position = UDim2.new(0, 0, 0, 0)
+    header.BackgroundColor3 = Color3.fromRGB(120, 30, 30)
+    header.BackgroundTransparency = 0.4
+    header.BorderSizePixel = 0
+    header.Parent = parent
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 12)
+    corner.Parent = header
+    
+    return header
+end
+
+local function createTextLabel(parent, text, size, position, options)
+    local label = Instance.new("TextLabel")
+    label.Name = "TextLabel"
+    label.Size = size
+    label.Position = position
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = options and options.TextColor3 or Color3.fromRGB(255, 255, 255)
+    label.TextTransparency = 1
+    label.Font = options and options.Font or Enum.Font.GothamSemibold
+    label.TextSize = options and options.TextSize or 18
+    label.TextWrapped = true
+    label.Parent = parent
+    
+    if options and options.XAlignment then
+        label.TextXAlignment = options.XAlignment
+    end
+    if options and options.YAlignment then
+        label.TextYAlignment = options.YAlignment
+    end
+    
+    return label
+end
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "UnsupportedGameGui"
+gui.ResetOnSpawn = false
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+gui.Parent = playerGui
+
+local mainFrame = createStyledFrame("MainFrame", UDim2.new(0, 400, 0, 200), UDim2.new(0.5, 0, 0.5, 0))
+mainFrame.Parent = gui
+
+local header = createHeader(mainFrame)
+
+local titleLabel = createTextLabel(header, "Unsupported Game", UDim2.new(1, -40, 0, 30), UDim2.new(0, 111.5, 0, 10), {
+    TextSize = 20,
+    XAlignment = Enum.TextXAlignment.Left
+})
+
+local messageFrame = Instance.new("Frame")
+messageFrame.Name = "MessageFrame"
+messageFrame.Size = UDim2.new(1, -40, 1, -70)
+messageFrame.Position = UDim2.new(0, 20, 0, 60)
+messageFrame.BackgroundTransparency = 1
+messageFrame.Parent = mainFrame
+
+local messageText = createTextLabel(messageFrame, 
+    "The game does not support", 
+    UDim2.new(1, 0, 1, 0), 
+    UDim2.new(0, 0, 0, 0), {
+    TextColor3 = Color3.fromRGB(200, 200, 200),
+    Font = Enum.Font.Gotham,
+    TextSize = 18,
+    XAlignment = Enum.TextXAlignment.Center,
+    YAlignment = Enum.TextYAlignment.Center
+})
+
+local isHiding = false
+local canClose = false
+
+local function showUI()
+    mainFrame.Visible = true
+    
+    TweenService:Create(blurEffect, TweenInfo.new(0.5), {Size = 24}):Play()
+    
+    mainFrame.Size = UDim2.new(0, 0, 0, 0)
+    TweenService:Create(
+        mainFrame,
+        TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+        {Size = UDim2.new(0, 400, 0, 200)}
+    ):Play()
+    
+    task.delay(0.2, function()
+        for _, child in ipairs(mainFrame:GetDescendants()) do
+            if child:IsA("TextLabel") then
+                TweenService:Create(child, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
+            end
+        end
+        canClose = true
+    end)
+end
+
+local function hideUI()
+    if isHiding or not canClose then return end
+    isHiding = true
+    
+    for _, child in ipairs(mainFrame:GetDescendants()) do
+        if child:IsA("TextLabel") then
+            TweenService:Create(child, TweenInfo.new(0.2), {TextTransparency = 1}):Play()
+        end
+    end
+    
+    TweenService:Create(
+        mainFrame,
+        TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.In),
+        {Size = UDim2.new(0, 0, 0, 0)}
+    ):Play()
+    
+    TweenService:Create(blurEffect, TweenInfo.new(0.35), {Size = 0}):Play()
+    
+    task.delay(0.5, function()
+        gui:Destroy()
+        blurEffect:Destroy()
+    end)
+end
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and canClose then
+        hideUI()
+    end
+end)
+
+task.delay(0.5, showUI)
