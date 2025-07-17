@@ -1,19 +1,10 @@
-local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
+local Players, TweenService, UserInputService = game:GetService("Players"), game:GetService("TweenService"), game:GetService("UserInputService")
 
 local ID = 7072772332
-if game.PlaceId == ID then return end
-
-if _G.UnsupportedGameGUILaunched then return end
+if game.PlaceId == ID or _G.UnsupportedGameGUILaunched then return end
 _G.UnsupportedGameGUILaunched = true
 
-local player = Players.LocalPlayer
-while not player do
-    Players.PlayerAdded:Wait()
-    player = Players.LocalPlayer
-end
-
+local player = Players.LocalPlayer or Players.PlayerAdded:Wait()
 local playerGui = player:WaitForChild("PlayerGui")
 
 local blurEffect = Instance.new("BlurEffect")
@@ -76,12 +67,8 @@ local function createTextLabel(parent, text, size, position, options)
     label.TextWrapped = true
     label.Parent = parent
     
-    if options and options.XAlignment then
-        label.TextXAlignment = options.XAlignment
-    end
-    if options and options.YAlignment then
-        label.TextYAlignment = options.YAlignment
-    end
+    if options and options.XAlignment then label.TextXAlignment = options.XAlignment end
+    if options and options.YAlignment then label.TextYAlignment = options.YAlignment end
     
     return label
 end
@@ -109,10 +96,7 @@ messageFrame.Position = UDim2.new(0, 20, 0, 60)
 messageFrame.BackgroundTransparency = 1
 messageFrame.Parent = mainFrame
 
-local messageText = createTextLabel(messageFrame, 
-    "The game does not support", 
-    UDim2.new(1, 0, 1, 0), 
-    UDim2.new(0, 0, 0, 0), {
+local messageText = createTextLabel(messageFrame, "The game does not support", UDim2.new(1, 0, 1, 0), UDim2.new(0, 0, 0, 0), {
     TextColor3 = Color3.fromRGB(200, 200, 200),
     Font = Enum.Font.Gotham,
     TextSize = 18,
@@ -126,19 +110,18 @@ local canClose = false
 local function showUI()
     mainFrame.Visible = true
     
-    TweenService:Create(blurEffect, TweenInfo.new(0.5), {Size = 24}):Play()
+    local blurTween = TweenService:Create(blurEffect, TweenInfo.new(0.5), {Size = 24})
+    blurTween:Play()
     
     mainFrame.Size = UDim2.new(0, 0, 0, 0)
-    TweenService:Create(
-        mainFrame,
-        TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
-        {Size = UDim2.new(0, 400, 0, 200)}
-    ):Play()
+    local frameTween = TweenService:Create(mainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 400, 0, 200)})
+    frameTween:Play()
     
     task.delay(0.2, function()
         for _, child in ipairs(mainFrame:GetDescendants()) do
             if child:IsA("TextLabel") then
-                TweenService:Create(child, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
+                local tween = TweenService:Create(child, TweenInfo.new(0.3), {TextTransparency = 0})
+                tween:Play()
             end
         end
         canClose = true
@@ -151,17 +134,16 @@ local function hideUI()
     
     for _, child in ipairs(mainFrame:GetDescendants()) do
         if child:IsA("TextLabel") then
-            TweenService:Create(child, TweenInfo.new(0.2), {TextTransparency = 1}):Play()
+            local tween = TweenService:Create(child, TweenInfo.new(0.2), {TextTransparency = 1})
+            tween:Play()
         end
     end
     
-    TweenService:Create(
-        mainFrame,
-        TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.In),
-        {Size = UDim2.new(0, 0, 0, 0)}
-    ):Play()
+    local frameTween = TweenService:Create(mainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, 0)})
+    frameTween:Play()
     
-    TweenService:Create(blurEffect, TweenInfo.new(0.35), {Size = 0}):Play()
+    local blurTween = TweenService:Create(blurEffect, TweenInfo.new(0.35), {Size = 0})
+    blurTween:Play()
     
     task.delay(0.5, function()
         gui:Destroy()
@@ -175,4 +157,4 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
-task.delay(0.5, showUI)
+showUI()
